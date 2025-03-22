@@ -16,7 +16,7 @@ std = []
 
 [dependencies]
 crc = "3.2.1"
-heapless = "0.8.0"
+heapless = "0.7.0"
 memchr = { version = "2.7.4", default-features = false }
 
 [dev-dependencies]
