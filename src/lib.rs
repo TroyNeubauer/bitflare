@@ -121,10 +121,11 @@ impl<const N: usize> BitflareReader<N> {
                             // Buffer packet for later when we receive the rest of it
                             if self.buf.extend_from_slice(input).is_err() {
                                 if cfg!(debug_assertions) || true {
-                                    println!(
-                                        "WARN: TMP payload too big: {:02X?}, for input: {input:02X?}",
-                                        self.buf
-                                    );
+                                    // println!(
+                                    //     "WARN: TMP payload too big: {:02X?}, for input: {input:02X?}",
+                                    //     self.buf
+                                    // );
+                                    self.buf.clear();
                                 }
                             }
 
@@ -161,12 +162,12 @@ impl<const N: usize> BitflareReader<N> {
                                 break;
                             }
                             TryDecodeError::CrcMismatch { .. } => {
-                                println!("WARN: CRC match while handling buffered packet");
+                                // println!("WARN: CRC match while handling buffered packet");
                                 self.buf.clear();
                                 break;
                             }
                             TryDecodeError::PayloadTooBig => {
-                                println!("WARN: Received invalid packet (payload too big)");
+                                // println!("WARN: Received invalid packet (payload too big)");
                                 self.buf.clear();
                                 break;
                             }
