@@ -17,6 +17,7 @@ dependencies = [
  "hxdmp",
  "memchr",
  "rand",
+ "rand_chacha",
 ]
 
 [[package]]
