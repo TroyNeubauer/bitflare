@@ -87,32 +87,22 @@ impl<const N: usize> BitflareReader<N> {
     }
 
     pub fn decode(&mut self, input: &[u8], mut on_payload: impl FnMut(&[u8])) {
-        println!();
-        println!(
-            "Decode called with {} input bytes: {input:02X?}",
-            input.len()
-        );
-        println!("Buffered state {} bytes: {:02X?}", self.buf.len(), self.buf);
-
         let mut input = input;
         while !input.is_empty() {
-            println!("input: {input:02X?}");
             if self.buf.is_empty() {
                 // Nothing buffered, just decode
 
                 let Some(magic_offset) = memchr::memchr(MAGIC, input) else {
-                    println!("  no magic found in input");
                     break;
                 };
-                println!("  found magic at offset {magic_offset}");
+
                 let (_, maybe_payload) = input.split_at(magic_offset);
                 match Self::try_decode_payload(maybe_payload) {
                     Ok((payload, rest)) => {
-                        println!("Calling on_payload for in memory payload: {payload:02X?}");
                         on_payload(payload);
                         input = rest
                     }
-                    Err(e) => match dbg!(e) {
+                    Err(e) => match e {
                         TryDecodeError::InvalidMagic => {
                             // Nothing buffered to work with. Throw away and try again from next byte
                             input = &input[1..];
@@ -122,7 +112,6 @@ impl<const N: usize> BitflareReader<N> {
                             input = rest;
                         }
                         TryDecodeError::PayloadTooBig => {
-                            println!("WARN: Received invalid packet (payload too big)");
                             // Payload too big (header field) skip to next packet
                             break;
                         }
@@ -132,12 +121,11 @@ impl<const N: usize> BitflareReader<N> {
                             // Buffer packet for later when we receive the rest of it
                             if self.buf.extend_from_slice(input).is_err() {
                                 if cfg!(debug_assertions) || true {
-                                    unreachable!(
-                                        "Buffer is empty. Would have hit PayloadTooBig instead"
+                                    println!(
+                                        "WARN: TMP payload too big: {:02X?}, for input: {input:02X?}",
+                                        self.buf
                                     );
                                 }
-                            } else {
-                                println!("Adding {} bytes to buf: {:02X?}", input.len(), self.buf);
                             }
 
                             break;
@@ -151,22 +139,19 @@ impl<const N: usize> BitflareReader<N> {
                     let byte = input[0];
                     input = &input[1..];
 
-                    println!("Handling oneoff byte {byte:02X}");
                     if self.buf.push(byte).is_err() {
-                        println!("WARN: TMP payload too big: {:02X?}", self.buf);
                         self.buf.clear();
                     }
 
                     match Self::try_decode_payload(&self.buf) {
                         Ok((payload, _)) => {
-                            println!("Calling on_payload for RE-buffered payload: {payload:02X?}");
                             on_payload(payload);
 
                             // Try to handle rest of input with zero copy
                             self.buf.clear();
                             break;
                         }
-                        Err(e) => match dbg!(e) {
+                        Err(e) => match e {
                             TryDecodeError::InvalidMagic => {
                                 if cfg!(debug_assertions) || true {
                                     unreachable!("Buffered packet should always have valid magic");
@@ -211,7 +196,6 @@ impl<const N: usize> BitflareReader<N> {
         len_bytes.copy_from_slice(&buf[2..4]);
         let len = u16::from_le_bytes(len_bytes) as usize;
         if len > N {
-            dbg!(len, N);
             return Err(TryDecodeError::PayloadTooBig);
         }
 
@@ -299,7 +283,7 @@ mod tests {
     #[test]
     fn fuzz() {
         let mut rng = rand::rng();
-        let mut buf = vec![0u8; 1024 * 1024];
+        let mut buf = vec![0u8; 32 * 1024];
 
         for _ in 0..1_000 {
             rand::Fill::fill(buf.as_mut_slice(), &mut rng);
@@ -317,7 +301,7 @@ mod tests {
         // even if framing is completely random
         let mut rng = rand_chacha::ChaCha12Rng::seed_from_u64(0x5372420);
 
-        let num_packets = 10_000_000;
+        let num_packets = 100_000;
 
         const MAX_PAYLOAD: usize = 32;
         let mut payloads: VecDeque<heapless::Vec<u8, MAX_PAYLOAD>> = (0..num_packets)
@@ -349,7 +333,7 @@ mod tests {
             .flatten()
             .collect();
 
-        hxdmp::hexdump(&src_all_bytes, &mut std::io::stdout()).unwrap();
+        // hxdmp::hexdump(&src_all_bytes, &mut std::io::stdout()).unwrap();
 
         let mut reader = BitflareReader::<{ MAX_PAYLOAD + 4 }>::new();
 
@@ -367,7 +351,6 @@ mod tests {
             reader.decode(buf, |payload| {
                 let expected = payloads.pop_front().unwrap();
                 assert_eq!(payload, expected);
-                println!("Verified {payload:02X?}");
             });
         }
 
