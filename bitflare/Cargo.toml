@@ -2,5 +2,12 @@
 name = "bitflare"
 version = "0.0.0"
 edition = "2024"
+readme = "README.md"
+description = "A `no_std` friendly simple framing format"
+documentation = "https://docs.rs/bitflare/"
+authors = ["Troy Neubauer <troyneubauer@gmail.com>"]
+license = "MIT"
+keywords = ["no_std", "serilization", "format"]
+categories = ["encoding"]
 
 [dependencies]
