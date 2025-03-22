@@ -27,8 +27,13 @@ impl<'a> BitflareWriter<'a> {
     }
 
     /// Invokes `f` which writes the payload into the passed array and returns the number of bytes written.
-    pub fn write_payload(&mut self, f: impl FnOnce(&mut [u8]) -> usize) -> Result<(), ()> {
-        let payload_length = f(&mut self.buf[PAYLOAD_OFFSET..]);
+    ///
+    /// If `f` returns `Err(())`, the operation is aborted, and this function returns `Err(())`
+    pub fn write_payload(
+        &mut self,
+        f: impl FnOnce(&mut [u8]) -> Result<usize, ()>,
+    ) -> Result<(), ()> {
+        let payload_length = f(&mut self.buf[PAYLOAD_OFFSET..])?;
 
         if payload_length > self.buf.len() - PAYLOAD_OFFSET {
             return Err(());
@@ -245,7 +250,7 @@ mod tests {
         writer
             .write_payload(|buf| {
                 buf.copy_from_slice(&u32::to_le_bytes(0x69690420));
-                4
+                Ok(4)
             })
             .unwrap();
 
@@ -263,7 +268,7 @@ mod tests {
         writer
             .write_payload(|buf| {
                 buf.copy_from_slice(&u64::to_le_bytes(0x0102030469690420));
-                8
+                Ok(8)
             })
             .unwrap();
 
@@ -324,7 +329,7 @@ mod tests {
                 writer
                     .write_payload(|dst| {
                         (&mut dst[..p.len()]).copy_from_slice(p);
-                        p.len()
+                        Ok(p.len())
                     })
                     .unwrap();
                 let len = writer.valid_length().unwrap();
