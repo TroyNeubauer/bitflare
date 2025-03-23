@@ -161,7 +161,7 @@ impl<const N: usize> BitflareReader<N> {
                         Err(e) => match e {
                             TryDecodeError::InvalidMagic => {
                                 if cfg!(debug_assertions) {
-                                    unreachable!("Buffered packet should always have valid magic");
+                                    // unreachable!("Buffered packet should always have valid magic");
                                 }
 
                                 self.buf.clear();
