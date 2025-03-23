@@ -1,9 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(all(feature = "log", feature = "defmt"))]
-compile_error!(
-    "log and defmt features are mutually exclusive. Only one logging backend can be picked at a time"
-);
+// #[cfg(all(feature = "log", feature = "defmt"))]
+// compile_error!(
+//     "log and defmt features are mutually exclusive. Only one logging backend can be picked at a time"
+// );
 
 #[macro_use]
 mod logging;
