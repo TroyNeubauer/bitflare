@@ -147,6 +147,7 @@ impl<const N: usize> BitflareReader<N> {
 
                     if self.buf.push(byte).is_err() {
                         self.buf.clear();
+                        break;
                     }
 
                     match Self::try_decode_payload(&self.buf) {
@@ -159,7 +160,7 @@ impl<const N: usize> BitflareReader<N> {
                         }
                         Err(e) => match e {
                             TryDecodeError::InvalidMagic => {
-                                if cfg!(debug_assertions) || true {
+                                if cfg!(debug_assertions) {
                                     unreachable!("Buffered packet should always have valid magic");
                                 }
 
@@ -178,7 +179,7 @@ impl<const N: usize> BitflareReader<N> {
                             }
                             TryDecodeError::TruncatedPayload { .. }
                             | TryDecodeError::TruncatedHeader => {
-                                // Waiting for mode data...
+                                // Waiting for more data...
                             }
                         },
                     }
