@@ -1,5 +1,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(all(feature = "log", feature = "defmt"))]
+compile_error!(
+    "log and defmt features are mutually exclusive. Only one logging backend can be picked at a time"
+);
+
+#[macro_use]
+mod logging;
+
 /// A simple, binary streaming format supporting dynamically sized payloads.
 ///
 ///
@@ -126,10 +134,10 @@ impl<const N: usize> BitflareReader<N> {
                             // Buffer packet for later when we receive the rest of it
                             if self.buf.extend_from_slice(input).is_err() {
                                 if cfg!(debug_assertions) || true {
-                                    // println!(
-                                    //     "WARN: TMP payload too big: {:02X?}, for input: {input:02X?}",
-                                    //     self.buf
-                                    // );
+                                    warn!(
+                                        "TMP payload too big: {:?}, for input: {:?}",
+                                        self.buf, input
+                                    );
                                     self.buf.clear();
                                 }
                             }
@@ -160,9 +168,7 @@ impl<const N: usize> BitflareReader<N> {
                         }
                         Err(e) => match e {
                             TryDecodeError::InvalidMagic => {
-                                if cfg!(debug_assertions) {
-                                    // unreachable!("Buffered packet should always have valid magic");
-                                }
+                                error!("Buffered packet should always have valid magic");
 
                                 self.buf.clear();
                                 break;
