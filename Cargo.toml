@@ -20,7 +20,7 @@ defmt = ["dep:defmt"]
 anyhow = { version = "1.0.97", optional = true }
 crc = "3.2.1"
 defmt = { version = "0.3.10", optional = true }
-heapless = "0.7.0"
+heapless = "0.8.0"
 log = { version = "0.4.26", optional = true }
 memchr = { version = "2.7.4", default-features = false }
 
